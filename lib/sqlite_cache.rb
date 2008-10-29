@@ -5,7 +5,7 @@ require 'sqlite3'
 require 'yaml'
 
 
-# Generic query cache, to store queries and their responses in an SQLite database
+# Generic query cache, to store keys and their values in an SQLite database
 class SqliteCache
 
   TABLE_NAME = 'query_cache'
@@ -13,19 +13,26 @@ class SqliteCache
   # Create a new SQLiteCache 
   def initialize( path )
     @db = SQLite3::Database.new( path )
-    @db.busy_timeout(1000)   # Wait 1sec before failing to gain lock
+
+    # Wait up to 10 seconds to access locked database
+    @db.busy_handler do |resource,retries|
+      sleep 0.1
+      retries<100
+    end
     
     # Create the table, if it doesn't exist
     if @db.table_info(TABLE_NAME).empty?
       @db.execute( %Q{
         CREATE TABLE #{TABLE_NAME} (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          query TEXT,
-          response TEXT,
+          key TEXT,
+          value TEXT,
           hits INTEGER DEFAULT 0,
-          created_at INTEGER
+          created_at INTEGER,
+          updated_at INTEGER
         );
       } )
+      @db.execute( %Q{ CREATE UNIQUE INDEX key_index ON #{TABLE_NAME} (key) } )
     end
   end
   
@@ -39,54 +46,60 @@ class SqliteCache
     @db.get_first_value( "SELECT COUNT(*) FROM #{TABLE_NAME};" ).to_i
   end
 
-  # Fetch something from the cache, based on a query object
-  def fetch( query )
-    id,response,hits = @db.get_first_row(
-      "SELECT id,response,hits "+
+  # Fetch something from the cache, based on a key string
+  def fetch( key )
+    key = key.to_s.strip unless key.nil?
+    raise "Invalid key" if key.nil? or key == ''
+
+    id,value,hits = @db.get_first_row(
+      "SELECT id,value,hits "+
       "FROM #{TABLE_NAME} "+
-      "WHERE query=?",
-      query.to_yaml( :SortKeys => true )
+      "WHERE key=?",
+      key.to_s.strip
     )
 
     # Return nil if there is cache MISS
-    return nil if response.nil?
+    return nil if value.nil?
     
     # Increment the number of hits
-    @db.execute("UPDATE #{TABLE_NAME} SET hits=? WHERE id=?", hits.to_i+1, id)
+    @db.execute("UPDATE #{TABLE_NAME} SET hits=?, updated_at=? WHERE id=?", hits.to_i+1, Time.now.to_i, id)
 
     # Otherwise if there is a HIT, parse the YAML into an object
-    return YAML::load(response)
+    return YAML::load(value)
   end
 
-  # Store a query and response in the cache
-  def store( query, response )
+  # Store a key and value in the cache
+  def store( key, value )
+    key = key.to_s.strip unless key.nil?
+    raise "Invalid key" if key.nil? or key == ''
+  
     @db.execute( %Q{
         INSERT INTO #{TABLE_NAME}
-        (query,response,created_at)
+        (key,value,created_at)
         VALUES (?,?,?)
       },
-      query.to_yaml( :SortKeys => true ),
-      response.to_yaml,
+      key,
+      value.to_yaml,
       Time.now.to_i
     )
     
-    return response
+    return value
   end
 
-  # Perform a block if query isn't already cached
-  def do_cached( query, &block )
+  # Perform a block if key isn't already cached
+  def do_cached( key, &block )
   
     # have a look in the cache
-    response = fetch(query)
+    value = fetch( key )
 
     # Cache HIT?
-    return response unless response.nil?
+    return value unless value.nil?
 
     # Cache MISS : execute the block
-    response = block.call(query)
+    value = block.call( key )
 
-    # Store response in the cache
-    return store( query, response )
+    # Store value in the cache
+    return store( key, value )
   end
 
 end
