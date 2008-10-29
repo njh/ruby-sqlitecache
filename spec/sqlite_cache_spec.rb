@@ -1,8 +1,13 @@
-#require File.dirname(__FILE__) + '/../spec_helper'
+$:.unshift(File.dirname(__FILE__))
+
+ROOT_DIR = File.join(File.dirname(__FILE__),'..')
+
+require 'spec_helper'
+require 'sqlite_cache'
 
 describe SqliteCache do
   before(:each) do
-    @cache_path = File.join(RAILS_ROOT,'tmp','query_cache_test') + '.db'
+    @cache_path = File.join(ROOT_DIR,'tmp','query_cache_test') + '.db'
     File.delete( @cache_path ) if File.exists?( @cache_path )
     @qc = SqliteCache.new( @cache_path )
   end
