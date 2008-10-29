@@ -7,12 +7,14 @@ require 'yaml'
 
 # Generic query cache, to store keys and their values in an SQLite database
 class SqliteCache
+  attr_accessor :count_hits
 
   TABLE_NAME = 'query_cache'
 
   # Create a new SQLiteCache 
   def initialize( path )
     @db = SQLite3::Database.new( path )
+    @count_hits = false
 
     # Wait up to 10 seconds to access locked database
     @db.busy_handler do |resource,retries|
@@ -62,7 +64,12 @@ class SqliteCache
     return nil if value.nil?
     
     # Increment the number of hits
-    @db.execute("UPDATE #{TABLE_NAME} SET hits=?, updated_at=? WHERE id=?", hits.to_i+1, Time.now.to_i, id)
+    if @count_hits
+      @db.execute(
+        "UPDATE #{TABLE_NAME} SET hits=?, updated_at=? WHERE id=?",
+        hits.to_i+1, Time.now.to_i, id
+      )
+    end
 
     # Otherwise if there is a HIT, parse the YAML into an object
     return YAML::load(value)
