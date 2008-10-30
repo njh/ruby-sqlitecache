@@ -5,21 +5,27 @@ require 'sqlite3'
 require 'yaml'
 
 
-# Generic query cache, to store keys and their values in an SQLite database
+## Lightweight, persistent cache, to store keys and their values in an SQLite database.
 class SqliteCache
+  ## Enable/disable cache hit counting [boolean]
   attr_accessor :count_hits
+  
+  ## Number of times to retry, if database is locked [integer, default 100]
+  attr_accessor :busy_retries
+  
+  ## Name of the table in the database to store things in.
+  TABLE_NAME = 'sqlitecache'
 
-  TABLE_NAME = 'query_cache'
-
-  # Create a new SQLiteCache 
+  ## Create a new SQLiteCache. Where <tt>path</tt> is the full path to the SQLite database file to use.
   def initialize( path )
     @db = SQLite3::Database.new( path )
     @count_hits = false
+    @busy_retries = 100
 
     # Wait up to 10 seconds to access locked database
     @db.busy_handler do |resource,retries|
       sleep 0.1
-      retries<100
+      retries<@busy_retries
     end
     
     # Create the table, if it doesn't exist
@@ -38,17 +44,17 @@ class SqliteCache
     end
   end
   
-  # Delete everything in the cache
+  ## Delete everything in the cache.
   def purge
     @db.execute( "DELETE FROM #{TABLE_NAME};" )
   end
   
-  # Return the number of items in the cache
+  ## Return the number of items in the cache.
   def size
     @db.get_first_value( "SELECT COUNT(*) FROM #{TABLE_NAME};" ).to_i
   end
 
-  # Fetch something from the cache, based on a key string
+  ## Fetch something from the cache, based on a key string.
   def fetch( key )
     key = key.to_s.strip unless key.nil?
     raise "Invalid key" if key.nil? or key == ''
@@ -60,7 +66,7 @@ class SqliteCache
       key.to_s.strip
     )
 
-    # Return nil if there is cache MISS
+    # Return nil if there is cache MISS.
     return nil if value.nil?
     
     # Increment the number of hits
@@ -75,7 +81,7 @@ class SqliteCache
     return YAML::load(value)
   end
 
-  # Store a key and value in the cache
+  ## Store a key and value in the cache.
   def store( key, value )
     key = key.to_s.strip unless key.nil?
     raise "Invalid key" if key.nil? or key == ''
@@ -93,7 +99,7 @@ class SqliteCache
     return value
   end
 
-  # Perform a block if key isn't already cached
+  ## Perform a block if key isn't already cached.
   def do_cached( key, &block )
   
     # have a look in the cache

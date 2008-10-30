@@ -87,3 +87,4 @@ desc "Upload rdoc to rubyforge"
 task :upload_rdoc => [:rdoc] do
   sh %{/usr/bin/scp -r -p rdoc/* sqlitecache.rubyforge.org:/var/www/gforge-projects/sqlitecache}
 end
+
