@@ -16,17 +16,16 @@ spec = Gem::Specification.new do |s|
   s.version           = VERS
   s.author            = "Nicholas J Humfrey"
   s.email             = "njh@aelius.com"
-  s.homepage          = "http://sqlitecache.rubyforge.org"
+  s.homepage          = "http://github.com/njh/ruby-sqlitecache"
   s.platform          = Gem::Platform::RUBY
   s.summary           = "SQLite Cache is a gem to allow you cache slow queries in ruby code." 
-  s.rubyforge_project = "sqlitecache" 
   s.description       = "The SQLite Cache gem allows you cache slow queries in ruby code. It provides a simple API to make it easy to add caching to your ruby code."
   s.files             = FileList["Rakefile", "lib/sqlite_cache.rb", "examples/*"]
   s.require_path      = "lib"
   
   # rdoc
   s.has_rdoc          = true
-  s.extra_rdoc_files  = ["README", "NEWS", "COPYING"]
+  s.extra_rdoc_files  = ["README.md", "NEWS.md", "COPYING"]
   
   # Dependencies
   s.add_dependency "rake"
@@ -79,12 +78,6 @@ Rake::RDocTask.new("rdoc") { |rdoc|
   rdoc.rdoc_dir = 'rdoc'
   rdoc.title    = "sqlitecache Documentation"
   rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.main = "README"
-  rdoc.rdoc_files.include("README", "NEWS", "COPYING", "lib/sqlite_cache.rb")
+  rdoc.main = "README.md"
+  rdoc.rdoc_files.include("README.md", "NEWS.md", "COPYING", "lib/sqlite_cache.rb")
 }
-
-desc "Upload rdoc to rubyforge"
-task :upload_rdoc => [:rdoc] do
-  sh %{/usr/bin/scp -r -p rdoc/* sqlitecache.rubyforge.org:/var/www/gforge-projects/sqlitecache}
-end
-
