@@ -35,10 +35,17 @@ Resources
 * Documentation: http://rdoc.info/github/njh/ruby-sqlitecache/master/frames
 
 
+License
+-------
+
+The sqlitecache ruby gem is licensed under the terms of the MIT license.
+See the file LICENSE for details.
+
+
 Contact
 -------
 
 * Author:    Nicholas J Humfrey
 * Email:     njh@aelius.com
+* Twitter:   [@njh](http://twitter.com/njh)
 * Home Page: http://www.aelius.com/njh/
-* License:   Distributes under the same terms as Ruby

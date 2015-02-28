@@ -25,7 +25,7 @@ spec = Gem::Specification.new do |s|
   
   # rdoc
   s.has_rdoc          = true
-  s.extra_rdoc_files  = ["README.md", "NEWS.md", "COPYING"]
+  s.extra_rdoc_files  = ["README.md", "NEWS.md", "LICENSE.md"]
   
   # Dependencies
   s.add_dependency "rake"
